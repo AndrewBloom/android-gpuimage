@@ -17,7 +17,6 @@
 package jp.co.cyberagent.android.gpuimage;
 
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.hardware.Camera.PreviewCallback;
@@ -45,7 +44,7 @@ import static jp.co.cyberagent.android.gpuimage.util.TextureRotationUtil.TEXTURE
 
 public class GPUImageRenderer implements GLSurfaceView.Renderer, GLTextureView.Renderer, PreviewCallback {
     private static final int NO_IMAGE = -1;
-    public static final float CUBE[] = {
+    public static final float QUAD[] = {
             -1.0f, -1.0f,
             1.0f, -1.0f,
             -1.0f, 1.0f,
@@ -58,7 +57,7 @@ public class GPUImageRenderer implements GLSurfaceView.Renderer, GLTextureView.R
 
     private int glTextureId = NO_IMAGE;
     private SurfaceTexture surfaceTexture = null;
-    private final FloatBuffer glCubeBuffer;
+    private final FloatBuffer glQuadBuffer;
     private final FloatBuffer glTextureBuffer;
     private IntBuffer glRgbBuffer;
 
@@ -66,7 +65,6 @@ public class GPUImageRenderer implements GLSurfaceView.Renderer, GLTextureView.R
     private int outputHeight;
     private int imageWidth;
     private int imageHeight;
-    private int addedPadding;
 
     private final Queue<Runnable> runOnDraw;
     private final Queue<Runnable> runOnDrawEnd;
@@ -84,10 +82,10 @@ public class GPUImageRenderer implements GLSurfaceView.Renderer, GLTextureView.R
         runOnDraw = new LinkedList<>();
         runOnDrawEnd = new LinkedList<>();
 
-        glCubeBuffer = ByteBuffer.allocateDirect(CUBE.length * 4)
+        glQuadBuffer = ByteBuffer.allocateDirect(QUAD.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
-        glCubeBuffer.put(CUBE).position(0);
+        glQuadBuffer.put(QUAD).position(0);
 
         glTextureBuffer = ByteBuffer.allocateDirect(TEXTURE_NO_ROTATION.length * 4)
                 .order(ByteOrder.nativeOrder())
@@ -119,7 +117,7 @@ public class GPUImageRenderer implements GLSurfaceView.Renderer, GLTextureView.R
     public void onDrawFrame(final GL10 gl) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         runAll(runOnDraw);
-        filter.onDraw(glTextureId, glCubeBuffer, glTextureBuffer);
+        filter.onDraw(glTextureId, glQuadBuffer, glTextureBuffer);
         runAll(runOnDrawEnd);
         if (surfaceTexture != null) {
             surfaceTexture.updateTexImage();
@@ -235,23 +233,9 @@ public class GPUImageRenderer implements GLSurfaceView.Renderer, GLTextureView.R
 
             @Override
             public void run() {
-                Bitmap resizedBitmap = null;
-                if (bitmap.getWidth() % 2 == 1) {
-                    resizedBitmap = Bitmap.createBitmap(bitmap.getWidth() + 1, bitmap.getHeight(),
-                            Bitmap.Config.ARGB_8888);
-                    Canvas can = new Canvas(resizedBitmap);
-                    can.drawARGB(0x00, 0x00, 0x00, 0x00);
-                    can.drawBitmap(bitmap, 0, 0, null);
-                    addedPadding = 1;
-                } else {
-                    addedPadding = 0;
-                }
 
-                glTextureId = OpenGlUtils.loadTexture(
-                        resizedBitmap != null ? resizedBitmap : bitmap, glTextureId, recycle);
-                if (resizedBitmap != null) {
-                    resizedBitmap.recycle();
-                }
+                glTextureId = OpenGlUtils.loadTexture(bitmap, glTextureId, recycle);
+
                 imageWidth = bitmap.getWidth();
                 imageHeight = bitmap.getHeight();
                 adjustImageScaling();
@@ -279,39 +263,39 @@ public class GPUImageRenderer implements GLSurfaceView.Renderer, GLTextureView.R
             outputHeight = this.outputWidth;
         }
 
-        float ratio1 = outputWidth / imageWidth;
-        float ratio2 = outputHeight / imageHeight;
+        float ratio1 = outputWidth / (float)imageWidth;
+        float ratio2 = outputHeight / (float)imageHeight;
         float ratioMax = Math.max(ratio1, ratio2);
-        int imageWidthNew = Math.round(imageWidth * ratioMax);
-        int imageHeightNew = Math.round(imageHeight * ratioMax);
+        float imageWidthNew = imageWidth * ratioMax;
+        float imageHeightNew = imageHeight * ratioMax;
 
         float ratioWidth = imageWidthNew / outputWidth;
         float ratioHeight = imageHeightNew / outputHeight;
 
-        float[] cube = CUBE;
-        float[] textureCords = TextureRotationUtil.getRotation(rotation, flipHorizontal, flipVertical);
+        float[] quad = QUAD;
+        float[] textureCoords = TextureRotationUtil.getRotation(rotation, flipHorizontal, flipVertical);
         if (scaleType == GPUImage.ScaleType.CENTER_CROP) {
             float distHorizontal = (1 - 1 / ratioWidth) / 2;
             float distVertical = (1 - 1 / ratioHeight) / 2;
-            textureCords = new float[]{
-                    addDistance(textureCords[0], distHorizontal), addDistance(textureCords[1], distVertical),
-                    addDistance(textureCords[2], distHorizontal), addDistance(textureCords[3], distVertical),
-                    addDistance(textureCords[4], distHorizontal), addDistance(textureCords[5], distVertical),
-                    addDistance(textureCords[6], distHorizontal), addDistance(textureCords[7], distVertical),
+            textureCoords = new float[]{
+                    addDistance(textureCoords[0], distHorizontal), addDistance(textureCoords[1], distVertical),
+                    addDistance(textureCoords[2], distHorizontal), addDistance(textureCoords[3], distVertical),
+                    addDistance(textureCoords[4], distHorizontal), addDistance(textureCoords[5], distVertical),
+                    addDistance(textureCoords[6], distHorizontal), addDistance(textureCoords[7], distVertical),
             };
         } else {
-            cube = new float[]{
-                    CUBE[0] / ratioHeight, CUBE[1] / ratioWidth,
-                    CUBE[2] / ratioHeight, CUBE[3] / ratioWidth,
-                    CUBE[4] / ratioHeight, CUBE[5] / ratioWidth,
-                    CUBE[6] / ratioHeight, CUBE[7] / ratioWidth,
+            quad = new float[]{
+                    QUAD[0] / ratioHeight, QUAD[1] / ratioWidth,
+                    QUAD[2] / ratioHeight, QUAD[3] / ratioWidth,
+                    QUAD[4] / ratioHeight, QUAD[5] / ratioWidth,
+                    QUAD[6] / ratioHeight, QUAD[7] / ratioWidth,
             };
         }
 
-        glCubeBuffer.clear();
-        glCubeBuffer.put(cube).position(0);
+        glQuadBuffer.clear();
+        glQuadBuffer.put(quad).position(0);
         glTextureBuffer.clear();
-        glTextureBuffer.put(textureCords).position(0);
+        glTextureBuffer.put(textureCoords).position(0);
     }
 
     private float addDistance(float coordinate, float distance) {

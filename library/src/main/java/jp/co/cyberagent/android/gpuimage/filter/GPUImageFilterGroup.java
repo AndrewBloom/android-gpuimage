@@ -28,7 +28,7 @@ import java.util.List;
 import jp.co.cyberagent.android.gpuimage.util.Rotation;
 import jp.co.cyberagent.android.gpuimage.util.TextureRotationUtil;
 
-import static jp.co.cyberagent.android.gpuimage.GPUImageRenderer.CUBE;
+import static jp.co.cyberagent.android.gpuimage.GPUImageRenderer.QUAD;
 import static jp.co.cyberagent.android.gpuimage.util.TextureRotationUtil.TEXTURE_NO_ROTATION;
 
 /**
@@ -66,10 +66,10 @@ public class GPUImageFilterGroup extends GPUImageFilter {
             updateMergedFilters();
         }
 
-        glCubeBuffer = ByteBuffer.allocateDirect(CUBE.length * 4)
+        glCubeBuffer = ByteBuffer.allocateDirect(QUAD.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
-        glCubeBuffer.put(CUBE).position(0);
+        glCubeBuffer.put(QUAD).position(0);
 
         glTextureBuffer = ByteBuffer.allocateDirect(TEXTURE_NO_ROTATION.length * 4)
                 .order(ByteOrder.nativeOrder())
