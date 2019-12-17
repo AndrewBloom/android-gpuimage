@@ -17,49 +17,19 @@
 package jp.co.cyberagent.android.gpuimage.util;
 
 public enum Rotation {
-    NORMAL, ROTATION_90, ROTATION_180, ROTATION_270;
+    ZERO(0),
+    CCW_90(1),
+    CCW_180(2),
+    CCW_270(3),
+    CW_90(-1),
+    CW_180(-2),
+    CW_270(-3);
 
-    /**
-     * Retrieves the int representation of the Rotation.
-     *
-     * @return 0, 90, 180 or 270
-     */
-    public int asInt() {
-        switch (this) {
-            case NORMAL:
-                return 0;
-            case ROTATION_90:
-                return 90;
-            case ROTATION_180:
-                return 180;
-            case ROTATION_270:
-                return 270;
-            default:
-                throw new IllegalStateException("Unknown Rotation!");
-        }
+    private final int value;
+
+    Rotation(final int newValue) {
+        value = newValue;
     }
 
-    /**
-     * Create a Rotation from an integer. Needs to be either 0, 90, 180 or 270.
-     *
-     * @param rotation 0, 90, 180 or 270
-     * @return Rotation object
-     */
-    public static Rotation fromInt(int rotation) {
-        switch (rotation) {
-            case 0:
-                return NORMAL;
-            case 90:
-                return ROTATION_90;
-            case 180:
-                return ROTATION_180;
-            case 270:
-                return ROTATION_270;
-            case 360:
-                return NORMAL;
-            default:
-                throw new IllegalStateException(
-                        rotation + " is an unknown rotation. Needs to be either 0, 90, 180 or 270!");
-        }
-    }
+    public int getValue() { return value; }
 }

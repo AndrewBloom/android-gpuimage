@@ -23,6 +23,8 @@ import android.opengl.GLES20;
 
 import java.io.InputStream;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
 import java.util.LinkedList;
 
 import jp.co.cyberagent.android.gpuimage.util.OpenGlUtils;
@@ -104,16 +106,16 @@ public class GPUImageFilter {
         outputHeight = height;
     }
 
-    public void onDraw(final int textureId, final FloatBuffer cubeBuffer,
-                       final FloatBuffer textureBuffer) {
+    public void onDraw(final int textureId, final FloatBuffer vertexBuffer,
+                       final FloatBuffer textureBuffer, final ShortBuffer indicesBuffer) {
         GLES20.glUseProgram(glProgId);
         runPendingOnDrawTasks();
         if (!isInitialized) {
             return;
         }
 
-        cubeBuffer.position(0);
-        GLES20.glVertexAttribPointer(glAttribPosition, 2, GLES20.GL_FLOAT, false, 0, cubeBuffer);
+        vertexBuffer.position(0);
+        GLES20.glVertexAttribPointer(glAttribPosition, 2, GLES20.GL_FLOAT, false, 0, vertexBuffer);
         GLES20.glEnableVertexAttribArray(glAttribPosition);
         textureBuffer.position(0);
         GLES20.glVertexAttribPointer(glAttribTextureCoordinate, 2, GLES20.GL_FLOAT, false, 0,
@@ -125,7 +127,7 @@ public class GPUImageFilter {
             GLES20.glUniform1i(glUniformTexture, 0);
         }
         onDrawArraysPre();
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+        GLES20.glDrawElements(GLES20.GL_TRIANGLES, indicesBuffer.limit(), GLES20.GL_UNSIGNED_SHORT, indicesBuffer);
         GLES20.glDisableVertexAttribArray(glAttribPosition);
         GLES20.glDisableVertexAttribArray(glAttribTextureCoordinate);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);

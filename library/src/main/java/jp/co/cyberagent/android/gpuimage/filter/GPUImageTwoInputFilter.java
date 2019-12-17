@@ -54,7 +54,7 @@ public class GPUImageTwoInputFilter extends GPUImageFilter {
 
     public GPUImageTwoInputFilter(String vertexShader, String fragmentShader) {
         super(vertexShader, fragmentShader);
-        setRotation(Rotation.NORMAL, false, false);
+        setRotation(Rotation.ZERO, false, false);
     }
 
     @Override

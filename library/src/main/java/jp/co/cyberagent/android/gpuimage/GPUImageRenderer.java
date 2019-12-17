@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -47,8 +48,12 @@ public class GPUImageRenderer implements GLSurfaceView.Renderer, GLTextureView.R
     public static final float QUAD[] = {
             -1.0f, -1.0f,
             1.0f, -1.0f,
-            -1.0f, 1.0f,
             1.0f, 1.0f,
+            -1.0f, 1.0f,
+    };
+
+    public static final short INDICES[] = {
+            0, 1, 2, 0, 2, 3
     };
 
     private GPUImageFilter filter;
@@ -59,6 +64,7 @@ public class GPUImageRenderer implements GLSurfaceView.Renderer, GLTextureView.R
     private SurfaceTexture surfaceTexture = null;
     private final FloatBuffer glQuadBuffer;
     private final FloatBuffer glTextureBuffer;
+    private final ShortBuffer glIndicesBuffer;
     private IntBuffer glRgbBuffer;
 
     private int outputWidth;
@@ -87,10 +93,15 @@ public class GPUImageRenderer implements GLSurfaceView.Renderer, GLTextureView.R
                 .asFloatBuffer();
         glQuadBuffer.put(QUAD).position(0);
 
-        glTextureBuffer = ByteBuffer.allocateDirect(TEXTURE_NO_ROTATION.length * 4)
+        glTextureBuffer = ByteBuffer.allocateDirect(8 * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
-        setRotation(Rotation.NORMAL, false, false);
+        setRotation(Rotation.ZERO, false, false);
+
+        glIndicesBuffer = ByteBuffer.allocateDirect(INDICES.length * 2)
+                .order(ByteOrder.nativeOrder())
+                .asShortBuffer();
+        glIndicesBuffer.put(INDICES).position(0);
     }
 
     @Override
@@ -117,7 +128,7 @@ public class GPUImageRenderer implements GLSurfaceView.Renderer, GLTextureView.R
     public void onDrawFrame(final GL10 gl) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         runAll(runOnDraw);
-        filter.onDraw(glTextureId, glQuadBuffer, glTextureBuffer);
+        filter.onDraw(glTextureId, glQuadBuffer, glTextureBuffer, glIndicesBuffer);
         runAll(runOnDrawEnd);
         if (surfaceTexture != null) {
             surfaceTexture.updateTexImage();
@@ -238,6 +249,10 @@ public class GPUImageRenderer implements GLSurfaceView.Renderer, GLTextureView.R
 
                 imageWidth = bitmap.getWidth();
                 imageHeight = bitmap.getHeight();
+
+                // The Origin in OGL Coords is left-bottom, on images is instead left-top
+                flipVertical  = !flipVertical;
+
                 adjustImageScaling();
             }
         });
@@ -258,13 +273,14 @@ public class GPUImageRenderer implements GLSurfaceView.Renderer, GLTextureView.R
     private void adjustImageScaling() {
         float outputWidth = this.outputWidth;
         float outputHeight = this.outputHeight;
-        if (rotation == Rotation.ROTATION_270 || rotation == Rotation.ROTATION_90) {
+        if (rotation == Rotation.CCW_270 || rotation == Rotation.CCW_90 ||
+                rotation == Rotation.CW_90 || rotation == Rotation.CW_270) {
             outputWidth = this.outputHeight;
             outputHeight = this.outputWidth;
         }
 
-        float ratio1 = outputWidth / (float)imageWidth;
-        float ratio2 = outputHeight / (float)imageHeight;
+        float ratio1 = outputWidth / (float) imageWidth;
+        float ratio2 = outputHeight / (float) imageHeight;
         float ratioMax = Math.max(ratio1, ratio2);
         float imageWidthNew = imageWidth * ratioMax;
         float imageHeightNew = imageHeight * ratioMax;
@@ -283,6 +299,9 @@ public class GPUImageRenderer implements GLSurfaceView.Renderer, GLTextureView.R
                     addDistance(textureCoords[4], distHorizontal), addDistance(textureCoords[5], distVertical),
                     addDistance(textureCoords[6], distHorizontal), addDistance(textureCoords[7], distVertical),
             };
+
+            glTextureBuffer.clear();
+            glTextureBuffer.put(textureCoords).position(0);
         } else {
             quad = new float[]{
                     QUAD[0] / ratioHeight, QUAD[1] / ratioWidth,
@@ -290,12 +309,9 @@ public class GPUImageRenderer implements GLSurfaceView.Renderer, GLTextureView.R
                     QUAD[4] / ratioHeight, QUAD[5] / ratioWidth,
                     QUAD[6] / ratioHeight, QUAD[7] / ratioWidth,
             };
+            glQuadBuffer.clear();
+            glQuadBuffer.put(quad).position(0);
         }
-
-        glQuadBuffer.clear();
-        glQuadBuffer.put(quad).position(0);
-        glTextureBuffer.clear();
-        glTextureBuffer.put(textureCoords).position(0);
     }
 
     private float addDistance(float coordinate, float distance) {

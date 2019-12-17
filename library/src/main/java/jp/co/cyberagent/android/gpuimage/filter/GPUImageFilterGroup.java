@@ -22,6 +22,8 @@ import android.opengl.GLES20;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,8 +44,6 @@ public class GPUImageFilterGroup extends GPUImageFilter {
     private int[] frameBuffers;
     private int[] frameBufferTextures;
 
-    private final FloatBuffer glCubeBuffer;
-    private final FloatBuffer glTextureBuffer;
     private final FloatBuffer glTextureFlipBuffer;
 
     /**
@@ -66,17 +66,7 @@ public class GPUImageFilterGroup extends GPUImageFilter {
             updateMergedFilters();
         }
 
-        glCubeBuffer = ByteBuffer.allocateDirect(QUAD.length * 4)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer();
-        glCubeBuffer.put(QUAD).position(0);
-
-        glTextureBuffer = ByteBuffer.allocateDirect(TEXTURE_NO_ROTATION.length * 4)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer();
-        glTextureBuffer.put(TEXTURE_NO_ROTATION).position(0);
-
-        float[] flipTexture = TextureRotationUtil.getRotation(Rotation.NORMAL, false, true);
+        float[] flipTexture = TextureRotationUtil.getRotation(Rotation.ZERO, false, true);
         glTextureFlipBuffer = ByteBuffer.allocateDirect(flipTexture.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
@@ -182,8 +172,8 @@ public class GPUImageFilterGroup extends GPUImageFilter {
      */
     @SuppressLint("WrongCall")
     @Override
-    public void onDraw(final int textureId, final FloatBuffer cubeBuffer,
-                       final FloatBuffer textureBuffer) {
+    public void onDraw(final int textureId, final FloatBuffer vertexBuffer,
+                       final FloatBuffer textureBuffer, final ShortBuffer glIndicesBuffer) {
         runPendingOnDrawTasks();
         if (!isInitialized() || frameBuffers == null || frameBufferTextures == null) {
             return;
@@ -200,11 +190,11 @@ public class GPUImageFilterGroup extends GPUImageFilter {
                 }
 
                 if (i == 0) {
-                    filter.onDraw(previousTexture, cubeBuffer, textureBuffer);
+                    filter.onDraw(previousTexture, vertexBuffer, textureBuffer, glIndicesBuffer);
                 } else if (i == size - 1) {
-                    filter.onDraw(previousTexture, glCubeBuffer, (size % 2 == 0) ? glTextureFlipBuffer : glTextureBuffer);
+                    filter.onDraw(previousTexture, vertexBuffer, textureBuffer, glIndicesBuffer);
                 } else {
-                    filter.onDraw(previousTexture, glCubeBuffer, glTextureBuffer);
+                    filter.onDraw(previousTexture, vertexBuffer, textureBuffer, glIndicesBuffer);
                 }
 
                 if (isNotLast) {

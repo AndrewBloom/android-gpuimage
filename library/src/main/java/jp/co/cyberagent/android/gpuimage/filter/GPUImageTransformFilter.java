@@ -22,6 +22,8 @@ import android.opengl.Matrix;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
 
 public class GPUImageTransformFilter extends GPUImageFilter {
     public static final String TRANSFORM_VERTEX_SHADER = "" +
@@ -86,17 +88,17 @@ public class GPUImageTransformFilter extends GPUImageFilter {
     }
 
     @Override
-    public void onDraw(final int textureId, final FloatBuffer cubeBuffer,
-                       final FloatBuffer textureBuffer) {
+    public void onDraw(final int textureId, final FloatBuffer vertexBuffer,
+                       final FloatBuffer textureBuffer, final ShortBuffer glIndicesBuffer) {
 
-        FloatBuffer vertBuffer = cubeBuffer;
+        FloatBuffer vertBuffer = vertexBuffer;
 
         if (!ignoreAspectRatio) {
 
             float[] adjustedVertices = new float[8];
 
-            cubeBuffer.position(0);
-            cubeBuffer.get(adjustedVertices);
+            vertexBuffer.position(0);
+            vertexBuffer.get(adjustedVertices);
 
             float normalizedHeight = (float) getOutputHeight() / (float) getOutputWidth();
             adjustedVertices[1] *= normalizedHeight;
@@ -111,7 +113,7 @@ public class GPUImageTransformFilter extends GPUImageFilter {
             vertBuffer.put(adjustedVertices).position(0);
         }
 
-        super.onDraw(textureId, vertBuffer, textureBuffer);
+        super.onDraw(textureId, vertBuffer, textureBuffer, glIndicesBuffer);
     }
 
     public void setTransform3D(float[] transform3D) {

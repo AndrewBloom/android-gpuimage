@@ -189,16 +189,16 @@ public class GPUImage {
             glTextureView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
         }
         renderer.setUpSurfaceTexture(camera);
-        Rotation rotation = Rotation.NORMAL;
+        Rotation rotation = Rotation.ZERO;
         switch (degrees) {
             case 90:
-                rotation = Rotation.ROTATION_90;
+                rotation = Rotation.CW_90;
                 break;
             case 180:
-                rotation = Rotation.ROTATION_180;
+                rotation = Rotation.CW_180;
                 break;
             case 270:
-                rotation = Rotation.ROTATION_270;
+                rotation = Rotation.CW_270;
                 break;
         }
         renderer.setRotationCamera(rotation, flipHorizontal, flipVertical);
@@ -375,7 +375,7 @@ public class GPUImage {
         }
 
         GPUImageRenderer renderer = new GPUImageRenderer(filter);
-        renderer.setRotation(Rotation.NORMAL,
+        renderer.setRotation(Rotation.ZERO,
                 this.renderer.isFlippedHorizontally(), this.renderer.isFlippedVertically());
         renderer.setScaleType(scaleType);
         PixelBuffer buffer = new PixelBuffer(bitmap.getWidth(), bitmap.getHeight());

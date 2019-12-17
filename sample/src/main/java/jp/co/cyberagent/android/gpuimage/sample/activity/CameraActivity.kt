@@ -103,10 +103,10 @@ class CameraActivity : AppCompatActivity() {
 
     private fun getRotation(orientation: Int): Rotation {
         return when (orientation) {
-            90 -> Rotation.ROTATION_90
-            180 -> Rotation.ROTATION_180
-            270 -> Rotation.ROTATION_270
-            else -> Rotation.NORMAL
+            90 -> Rotation.CW_90
+            180 -> Rotation.CW_180
+            270 -> Rotation.CW_270
+            else -> Rotation.ZERO
         }
     }
 
